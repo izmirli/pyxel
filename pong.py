@@ -5,11 +5,17 @@ import logging
 
 SCREEN_WIDTH = 256
 SCREEN_HEIGHT = 256
-BALL_SIZE = 3
-HANDLE_HEIGHT = 50
+BALL_SIZE = 4
+BALL_SPEED = 5
+HANDLE_HEIGHT = 40
 HANDLE_WIDTH = 5
 HANDLE_SPEED = 4
-BALL_SPEED = 5
+COLOR = pyxel.COLOR_WHITE
+
+logging.basicConfig(
+    format='[%(asctime)s %(levelname)s] %(message)s',
+    level=logging.DEBUG,
+)
 
 
 class Pong:
@@ -23,14 +29,15 @@ class Pong:
         self.ball = {}
         self.sound = {}
         pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT, caption='Pyxel Pong')  # , fullscreen=True)
+        self.screen_middle = {'x': pyxel.width // 2, 'y': pyxel.height // 2}
         self.setup_sounds()
         self.restart()
         pyxel.run(self.update, self.draw)
 
     def restart(self):
         self.game_paused = False
-        self.p1 = {'x': 7, 'y': SCREEN_HEIGHT // 2, 'vy': 0}
-        self.p2 = {'x': 243, 'y': SCREEN_HEIGHT // 2, 'vy': 0}
+        self.p1 = {'x': 7, 'y': self.screen_middle['y'], 'vy': 0}
+        self.p2 = {'x': 243, 'y': self.screen_middle['y'], 'vy': 0}
         self.ball = {'x': 113, 'y': 113,
                      'vx': choice((1, -1)) * BALL_SPEED // 2,
                      'vy': choice((1, -1)) * BALL_SPEED // 2}
@@ -70,7 +77,7 @@ class Pong:
                 self.p2['vy'] = HANDLE_SPEED
 
     def bot_move(self):
-        if not self.bot or self.ball['x'] < SCREEN_WIDTH // 2:
+        if not self.bot or self.ball['x'] < self.screen_middle['x']:
             return
 
         if self.p2['y'] + HANDLE_HEIGHT / 2 > self.ball['y'] + BALL_SIZE*3:
@@ -79,9 +86,6 @@ class Pong:
             self.p2['vy'] = HANDLE_SPEED
 
     def handle_ball_interactions(self):
-        if self.game_paused:
-            return
-
         # point - ball has passed player
         if (self.ball['x'] - BALL_SIZE) <= 0:
             self.game_paused = True
@@ -115,37 +119,63 @@ class Pong:
         speed_percent = abs(
             self.ball['y'] - (player['y'] + handle_mid)
         ) / handle_mid
-        # logging.error(
-        #     f'ball: {self.ball["y"]}, player: {player["y"]}, '
-        #     f'handle_mid: {handle_mid}, speed_percent: {speed_percent:.2}, '
-        #     f'res: {math.ceil(speed * speed_percent)} (max: {speed})'
-        # )
+        logging.debug(
+            f'ball: {self.ball["y"]}, player: {player["y"]}, '
+            f'handle_mid: {handle_mid}, speed_percent: {speed_percent:.2}, '
+            f'res: {math.ceil(speed * speed_percent)} (max: {speed})'
+        )
         return math.ceil(speed * speed_percent)
 
     def update(self):
         self.handle_key_input()
+        if self.game_paused:
+            return
+
         self.bot_move()
         self.handle_ball_interactions()
 
-        if not self.game_paused:
-            for player in [self.p1, self.p2]:
-                if 0 < player['vy'] + player['y'] < (pyxel.width - HANDLE_HEIGHT):
-                    player['y'] += player['vy']
+        for player in [self.p1, self.p2]:
+            if 0 < player['vy'] + player['y'] < (pyxel.width - HANDLE_HEIGHT):
+                player['y'] += player['vy']
 
-            self.ball['x'] += self.ball['vx']
-            self.ball['y'] += self.ball['vy']
+        self.ball['x'] += self.ball['vx']
+        self.ball['y'] += self.ball['vy']
 
     def draw_score(self):
-        pyxel.text(
-            SCREEN_WIDTH // 2 - 10, 5, f'{self.score[0]} : {self.score[1]}', 10
-        )
+        quarter_screen = pyxel.width // 4
+        pyxel.text(quarter_screen, 5, str(self.score[0]), COLOR)
+        pyxel.text(quarter_screen * 3, 5, str(self.score[1]), COLOR)
+        # pyxel.text(SCREEN_WIDTH // 2 - 10, 5, f'{self.score[0]} : {self.score[1]}', COLOR)
+
+    @staticmethod
+    def draw_divider():
+        screen_middle = pyxel.width // 2
+        for y in range(0, pyxel.height - 2, 4):
+            pyxel.line(screen_middle, y, screen_middle, y + 2, COLOR)
+            # logging.debug(f'>> draw_divider << {screen_middle}, {y}-{y + 5}')
 
     def draw(self):
         pyxel.cls(0)
+        self.draw_divider()
         self.draw_score()
-        pyxel.circ(self.ball['x'], self.ball['y'], BALL_SIZE, 3)
+        # pyxel.circ(self.ball['x'], self.ball['y'], BALL_SIZE, 3)
+        pyxel.rect(
+            self.ball['x'] + BALL_SIZE // 2, self.ball['y'] + BALL_SIZE // 2,
+            BALL_SIZE, BALL_SIZE, COLOR
+        )
         for player in [self.p1, self.p2]:
-            pyxel.rect(player['x'], player['y'], HANDLE_WIDTH, HANDLE_HEIGHT, 5)
+            pyxel.rect(player['x'], player['y'], HANDLE_WIDTH, HANDLE_HEIGHT, COLOR)
+
+        if self.game_paused:
+            self.draw_paused()
+
+    def draw_paused(self):
+        pyxel.text(
+            self.screen_middle['x'] - 4*pyxel.FONT_WIDTH,
+            self.screen_middle['x'],
+            'Pong Paused',
+            pyxel.COLOR_YELLOW
+        )
 
 
 def main():
