@@ -1,3 +1,4 @@
+"""Pong re-creation (sort-of) with Pyxel is a retro game engine."""
 import pyxel
 import math
 from random import choice
@@ -19,8 +20,10 @@ logging.basicConfig(
 
 
 class Pong:
+    """Pong game main class."""
 
     def __init__(self, bot: bool = True):
+        """Pong init as a single player game (default) or 2-player game."""
         self.bot = bot
         self.score = [0, 0]
         self.game_paused = False
@@ -28,21 +31,23 @@ class Pong:
         self.p2 = {}
         self.ball = {}
         self.sound = {}
-        pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT, caption='Pyxel Pong')  # , fullscreen=True)
+        pyxel.init(SCREEN_WIDTH, SCREEN_HEIGHT, title='Pyxel Pong')  # , fullscreen=True)
         self.screen_middle = {'x': pyxel.width // 2, 'y': pyxel.height // 2}
         self.setup_sounds()
         self.restart()
         pyxel.run(self.update, self.draw)
 
     def restart(self):
+        """Restart game, from paused mode, starting a new round."""
         self.game_paused = False
         self.p1 = {'x': 7, 'y': self.screen_middle['y'], 'vy': 0}
         self.p2 = {'x': 243, 'y': self.screen_middle['y'], 'vy': 0}
         self.ball = {'x': 113, 'y': 113,
-                     'vx': choice((1, -1)) * BALL_SPEED // 2,
-                     'vy': choice((1, -1)) * BALL_SPEED // 2}
+                     'vx': choice((1, -1)) * BALL_SPEED // 2,  # noqa: S311
+                     'vy': choice((1, -1)) * BALL_SPEED // 2}  # noqa: S311
 
     def setup_sounds(self):
+        """Set up game events sounds."""
         pyxel.sound(0).set("f0ra4r", "p", "7", "s", 7)
         self.sound['paused'] = 0
         pyxel.sound(1).set("G2B-2D3R", "p", "7", "s", 3)
@@ -53,10 +58,11 @@ class Pong:
         self.sound['point'] = 3
         pyxel.sound(4).set("a3a2c2c2", "n", "7742", "s", 10)
         self.sound['quit'] = 4
-        pyxel.sound(4).set("G2B-2D0R", "n", "7742", "s", 3)
-        self.sound['wall'] = 4
+        pyxel.sound(5).set("G2B-2D0R", "n", "7742", "s", 3)
+        self.sound['wall'] = 5
 
     def handle_key_input(self):
+        """Update game according to keyboard inputs."""
         if pyxel.btn(pyxel.KEY_Q):
             pyxel.play(0, self.sound['quit'])
             pyxel.quit()
@@ -77,6 +83,7 @@ class Pong:
                 self.p2['vy'] = HANDLE_SPEED
 
     def bot_move(self):
+        """Update player 2 move if he is a bot."""
         if not self.bot or self.ball['x'] < self.screen_middle['x']:
             return
 
@@ -86,6 +93,7 @@ class Pong:
             self.p2['vy'] = HANDLE_SPEED
 
     def handle_ball_interactions(self):
+        """Check and handle if ball should interact with anything."""
         # point - ball has passed player
         if (self.ball['x'] - BALL_SIZE) <= 0:
             self.game_paused = True
@@ -114,6 +122,7 @@ class Pong:
             pyxel.play(0, self.sound['p2'])
 
     def ball_speed_player_effect(self, player: dict) -> int:
+        """Get ball speed by the place it hit the player's handle."""
         speed = BALL_SPEED
         handle_mid = HANDLE_HEIGHT // 2
         speed_percent = abs(
@@ -127,6 +136,7 @@ class Pong:
         return math.ceil(speed * speed_percent)
 
     def update(self):
+        """Update game for this round."""
         self.handle_key_input()
         if self.game_paused:
             return
@@ -142,6 +152,7 @@ class Pong:
         self.ball['y'] += self.ball['vy']
 
     def draw_score(self):
+        """Dra the score for each player."""
         quarter_screen = pyxel.width // 4
         pyxel.text(quarter_screen, 5, str(self.score[0]), COLOR)
         pyxel.text(quarter_screen * 3, 5, str(self.score[1]), COLOR)
@@ -149,12 +160,14 @@ class Pong:
 
     @staticmethod
     def draw_divider():
+        """Draw a vertical divider in the middle of the screen."""
         screen_middle = pyxel.width // 2
         for y in range(0, pyxel.height - 2, 4):
             pyxel.line(screen_middle, y, screen_middle, y + 2, COLOR)
             # logging.debug(f'>> draw_divider << {screen_middle}, {y}-{y + 5}')
 
     def draw(self):
+        """Draw everything on screen for this round."""
         pyxel.cls(0)
         self.draw_divider()
         self.draw_score()
@@ -170,6 +183,7 @@ class Pong:
             self.draw_paused()
 
     def draw_paused(self):
+        """Draw paused text in the middle of the screen."""
         pyxel.text(
             self.screen_middle['x'] - 4*pyxel.FONT_WIDTH,
             self.screen_middle['x'],
@@ -179,6 +193,7 @@ class Pong:
 
 
 def main():
+    """Initiate and run game."""
     Pong()
 
 
